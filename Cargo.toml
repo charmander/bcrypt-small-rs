@@ -1,0 +1,27 @@
+[package]
+name = 'bcrypt-small'
+version = '0.1.0'
+edition = '2018'
+
+authors = ['Charmander <~@charmander.me>']
+license = 'ISC'
+description = 'bcrypt password hashing and verification in safe Rust.'
+keywords = ['bcrypt', 'hash']
+categories = ['cryptography']
+documentation = 'https://docs.rs/bcrypt-small/'
+repository = 'https://github.com/charmander/bcrypt-small-rs'
+
+readme = 'README.md'
+
+include = [
+	'src/base64.rs',
+	'src/lib.rs',
+]
+
+[dependencies.bcrypt-only]
+version = '^0.3.1'
+features = ['std']
+
+[dependencies.getrandom]
+version = '^0.1.10'
+features = ['std']
