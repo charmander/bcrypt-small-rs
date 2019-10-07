@@ -11,12 +11,17 @@ mod base64;
 #[cfg(test)]
 mod tests;
 
+/// The number of ASCII bytes in a `$2b$…` formatted bcrypt hash string.
 pub const FORMATTED_HASH_SIZE: usize = 60;
 
+/// A bcrypt hashing error for new hashes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum HashError {
+	/// The password was longer than the limit of 72 UTF-8 bytes.
 	Length,
+	/// The password contained a NUL character (`'\0'`).
 	ZeroByte,
+	/// There was an error generating the salt.
 	RandomError(getrandom::Error),
 }
 
@@ -39,14 +44,34 @@ impl Error for HashError {
 	}
 }
 
+/// A bcrypt hash, comprising a work factor, salt, and digest bytes. Holds information equivalent to the `$2b$…` format created by OpenBSD’s bcrypt.
 #[derive(Clone, Debug)]
 pub struct Hash {
+	/// The hash’s work factor.
 	pub work_factor: WorkFactor,
+	/// The hash’s salt.
 	pub salt: Salt,
+	/// The actual output of the hash.
 	pub hash: [u8; 23],
 }
 
 impl Hash {
+	/// Converts the hash to `$2b$…` form as exactly 60 ASCII bytes.
+	///
+	/// ```
+	/// # use bcrypt_small::*;
+	/// # use std::str;
+	/// let hash = Hash {
+	///     work_factor: WorkFactor::EXP4,
+	///     salt: Salt::from_bytes(&[b'*'; 16]),
+	///     hash: *b"\xa2\x16\x9di\xe4\x9c\xaa\xf5\xe6]0>\x81=_\\,N\xab\x0c\x00\xd3)",
+	/// };
+	///
+	/// assert_eq!(
+	///     str::from_utf8(&hash.to_formatted()).unwrap(),
+	///     "$2b$04$IgmoIgmoIgmoIgmoIgmoIemfYbYcQaotVkVR.8eRzdVAvMouu.ywi"
+	/// );
+	/// ```
 	pub fn to_formatted(&self) -> [u8; FORMATTED_HASH_SIZE] {
 		let mut formatted = [0_u8; 60];
 		formatted[..4].copy_from_slice(b"$2b$");
@@ -59,6 +84,7 @@ impl Hash {
 	}
 }
 
+/// An error parsing a formatted bcrypt hash string.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ParseError {
 	Length,
@@ -82,6 +108,7 @@ impl fmt::Display for ParseError {
 
 impl Error for ParseError {}
 
+/// Parses a hash from the `$2b$…` format created by OpenBSD’s bcrypt. Also supports `$2a$` and `$2y$` prefixes from earlier and other implementations.
 impl FromStr for Hash {
 	type Err = ParseError;
 
@@ -113,6 +140,7 @@ impl FromStr for Hash {
 	}
 }
 
+/// Creates a new password hash.
 pub fn hash(password: &str, work_factor: WorkFactor) -> Result<Hash, HashError> {
 	if password.len() > KEY_SIZE_MAX {
 		return Err(HashError::Length);
@@ -130,6 +158,7 @@ pub fn hash(password: &str, work_factor: WorkFactor) -> Result<Hash, HashError> 
 	Ok(Hash { work_factor, salt, hash })
 }
 
+/// Compares a password to an existing hash.
 pub fn compare(password: &str, expected: &Hash) -> Result<bool, CompareError> {
 	let hash = bcrypt(password.as_bytes(), &expected.salt, expected.work_factor)?;
 	Ok(hash == expected.hash)
