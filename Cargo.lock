@@ -7,7 +7,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "bcrypt-small"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bcrypt-only 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "getrandom 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
